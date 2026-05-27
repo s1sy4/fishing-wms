@@ -1,0 +1,52 @@
+name: fishing-wms
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: fishing_wms
+      POSTGRES_USER: wms
+      POSTGRES_PASSWORD: wms_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # === ДОБАВЬТЕ ЭТОТ БЛОК ===
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wms -d fishing_wms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # ==========================
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    user: root
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://wms:wms_secret@db:5432/fishing_wms?schema=public
+    depends_on:
+      db:
+        condition: service_healthy  # Теперь это сработает
+    #volumes:
+    #  - ./backend:/app
+    #  - /app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:

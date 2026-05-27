@@ -1,0 +1,30 @@
+# === ROOT ===
+node_modules/
+dist/
+*.log
+.DS_Store
+.env
+.env.local
+.env.*.local
+
+# === BACKEND ===
+backend/node_modules/
+backend/dist/
+backend/prisma/.prisma/client/
+backend/*.log
+
+# === FRONTEND ===
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo
+
+# === DOCKER ===
+docker-compose.override.yml
+*.dockerignore
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo

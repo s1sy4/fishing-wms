@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Cell" ALTER COLUMN "name" SET DATA TYPE VARCHAR(100);
