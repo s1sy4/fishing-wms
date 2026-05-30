@@ -1,0 +1,1 @@
+export interface CreateCellDto { name: string; zoneId: number; capacity?: number; status?: string; }

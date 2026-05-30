@@ -5,7 +5,7 @@ import { CreateReceiptItemDto } from './dto/create-receipt-item.dto';
 
 @Injectable()
 export class ReceivingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   // === RECEIPTS ===
   async getReceipts() {
@@ -49,10 +49,12 @@ export class ReceivingService {
     for (let i = 0; i < dto.quantity; i++) {
       const inv = await this.prisma.inventory.create({
         data: {
-          name: `#${Date.now()}-${i}`, // уникальный серийный номер
+          name: `Снасть #${Date.now()}-${i}`,           
+          serial_number: `SN-${Date.now()}-${i}`,      
           typeId: dto.typeId,
           cellId: defaultCell.id,
-          status: 'available'
+          status: 'available',
+          condition: 'new',                              
         }
       });
       inventories.push(inv);

@@ -1,0 +1,1 @@
+export interface CreateZoneDto { name: string; description?: string; }

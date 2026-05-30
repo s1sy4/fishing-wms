@@ -1,4 +1,3 @@
-// backend/prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,109 +7,166 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// === СПРАВОЧНИКИ ===
-
 model Zone {
-  id        Int       @id @default(autoincrement())
-  name      String    @db.VarChar(100)
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  description String? @db.Text
+  
   cells     Cell[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("zone")
 }
 
 model Cell {
-  id        Int       @id @default(autoincrement())
-  name      String    @db.VarChar(100)
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(50)
   zoneId    Int
-  zone      Zone      @relation(fields: [zoneId], references: [id])
-  items     Inventory[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
-model InventoryType {
-  id        Int         @id @default(autoincrement())
-  name      String      @db.VarChar(100)
-  items     Inventory[]
-  receipts  ReceiptItem[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-}
-
-model Supplier {
-  id        Int       @id @default(autoincrement())
-  name      String    @db.VarChar(200)
-  receipts  Receipt[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
-model Employee {
-  id        Int         @id @default(autoincrement())
-  name      String      @db.VarChar(100)
-  role      String      @db.VarChar(50)
-  email     String      @db.VarChar(100) @unique
-  password  String      @db.VarChar(255)
-  contracts RentalContract[]
-  movements InventoryMovement[]
-  tasks     AssemblyTask[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-}
-
-model Customer {
-  id        Int         @id @default(autoincrement())
-  name      String      @db.VarChar(100)
-  phone     String      @db.VarChar(20)
-  email     String?     @db.VarChar(100)
-  contracts RentalContract[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-}
-
-// === ОСНОВНЫЕ СУЩНОСТИ ===
-
-model Inventory {
-  id        Int               @id @default(autoincrement())
-  name      String            @db.VarChar(200)
-  typeId    Int
-  type      InventoryType     @relation(fields: [typeId], references: [id])
-  cellId    Int
-  cell      Cell              @relation(fields: [cellId], references: [id])
-  status    String            @db.VarChar(50) @default("available")
-  rentalItems     RentalContractItem[]
-  movements       InventoryMovement[]
-  inventoryChecks InventoryCheckItem[]
+  zone      Zone     @relation(fields: [zoneId], references: [id])
+  capacity  Int      @default(1)
+  status    String   @db.VarChar(20) @default("available")
+  
+  inventories       Inventory[]
+  moveRequestsFrom  MoveRequest[] @relation("MoveRequestFrom")
+  moveRequestsTo    MoveRequest[] @relation("MoveRequestTo")
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("cell")
+}
+
+model InventoryType {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(100)
+  description String? @db.Text
+  
+  rental_price Decimal @db.Decimal(10, 2) @default(0) 
+  deposit      Decimal @db.Decimal(10, 2) @default(0) 
+  requires_assembly Boolean @default(false) 
+  
+  inventories  Inventory[]
+  receiptItems ReceiptItem[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inventory_type")
+}
+
+model Supplier {
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(200)
+  contact_person String?  @db.VarChar(100) 
+  phone          String?  @db.VarChar(20)
+  email          String?  @db.VarChar(100)
+  inn            String?  @db.VarChar(12)  
+  
+  receipts Receipt[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("supplier")
+}
+
+model Employee {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  role      String   @db.VarChar(50) @default("operator")
+  email     String   @db.VarChar(100) @unique
+  password  String   @db.VarChar(255)
+  phone     String?  @db.VarChar(20)
+  hire_date DateTime? 
+  contracts       RentalContract[]
+  movements       InventoryMovement[]
+  assemblyTasks   AssemblyTask[]
+  moveRequests    MoveRequest[]
+  movementOps     MovementOperation[]
+  inventoryChecks InventoryCheck[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employee")
+}
+
+model Customer {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(100)
+  phone        String   @db.VarChar(20)
+  email        String?  @db.VarChar(100)
+  passport_id  String?  @db.VarChar(20)
+  address      String?  @db.Text
+  
+  contracts RentalContract[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customer")
+}
+
+model Inventory {
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(200)
+  serial_number  String   @db.VarChar(100) @unique
+  typeId         Int
+  type           InventoryType @relation(fields: [typeId], references: [id])
+  cellId         Int
+  cell           Cell          @relation(fields: [cellId], references: [id])
+  
+  status         String   @db.VarChar(50) @default("available") 
+  condition      String   @db.VarChar(50) @default("new")
+  purchase_date  DateTime? 
+  purchase_price Decimal?  @db.Decimal(10, 2)
+  
+  contractItems RentalContractItem[]
+  movements     InventoryMovement[]
+  checkItems    InventoryCheckItem[]
+  movementOps   MovementOperation[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inventory")
 }
 
 model RentalContract {
-  id        Int               @id @default(autoincrement())
-  number    String            @db.VarChar(50) @unique
-  customerId Int
-  customer  Customer          @relation(fields: [customerId], references: [id])
-  employeeId Int
-  employee  Employee          @relation(fields: [employeeId], references: [id])
-  startDate DateTime
-  endDate   DateTime
-  status    String            @db.VarChar(50) @default("active")
-  items     RentalContractItem[]
-  payments  Payment[]
-  assemblyTask AssemblyTask?
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id             Int      @id @default(autoincrement())
+  number         String   @db.VarChar(50) @unique
+  customerId     Int
+  customer       Customer @relation(fields: [customerId], references: [id])
+  employeeId     Int
+  employee       Employee @relation(fields: [employeeId], references: [id])
+  startDate      DateTime
+  endDate        DateTime
+  status         String   @db.VarChar(50) @default("active") 
+  total_amount   Decimal  @db.Decimal(10, 2) @default(0) 
+  deposit_amount Decimal  @db.Decimal(10, 2) @default(0) 
+  notes          String?  @db.Text
+  
+  items          RentalContractItem[]
+  payments       Payment[]
+  assemblyTask   AssemblyTask?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rental_contract")
 }
 
 model RentalContractItem {
-  id         Int            @id @default(autoincrement())
-  contractId Int
-  contract   RentalContract @relation(fields: [contractId], references: [id])
+  id          Int              @id @default(autoincrement())
+  contractId  Int
+  contract    RentalContract   @relation(fields: [contractId], references: [id])
   inventoryId Int
-  inventory  Inventory      @relation(fields: [inventoryId], references: [id])
-  quantity   Int            @default(1)
-  createdAt  DateTime       @default(now())
+  inventory   Inventory        @relation(fields: [inventoryId], references: [id])
+  price_snapshot Decimal       @db.Decimal(10, 2) @default(0) 
+  createdAt DateTime @default(now())
+
+  @@map("rental_contract_item")
 }
 
 model Payment {
@@ -118,43 +174,62 @@ model Payment {
   contractId Int
   contract   RentalContract @relation(fields: [contractId], references: [id])
   amount     Decimal        @db.Decimal(10, 2)
-  type       String         @db.VarChar(50) // deposit, rent, penalty
+  type       String         @db.VarChar(50) 
+  status     String         @db.VarChar(20) 
   paidAt     DateTime       @default(now())
-  createdAt  DateTime       @default(now())
+  note       String?        @db.Text
+  
+  createdAt DateTime @default(now())
+
+  @@map("payment")
 }
 
 model AssemblyTask {
-  id         Int            @id @default(autoincrement())
-  contractId Int            @unique
-  contract   RentalContract @relation(fields: [contractId], references: [id])
-  employeeId Int
-  employee   Employee       @relation(fields: [employeeId], references: [id])
-  status     String         @db.VarChar(50) @default("pending")
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id          Int            @id @default(autoincrement())
+  contractId  Int            @unique
+  contract    RentalContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  employeeId  Int
+  employee    Employee       @relation(fields: [employeeId], references: [id])
+  status      String         @db.VarChar(50) @default("pending")
+  notes       String?        @db.Text
+  priority    String         @db.VarChar(20) @default("normal")
+  completed_at DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("assembly_task")
 }
 
-// === ОПЕРАЦИИ ===
-
 model Receipt {
-  id        Int       @id @default(autoincrement())
-  number    String    @db.VarChar(50) @unique
+  id         Int       @id @default(autoincrement())
+  number     String    @db.VarChar(50) @unique
   supplierId Int
-  supplier  Supplier  @relation(fields: [supplierId], references: [id])
-  date      DateTime  @default(now())
-  items     ReceiptItem[]
-  createdAt DateTime  @default(now())
+  supplier   Supplier  @relation(fields: [supplierId], references: [id])
+  date       DateTime  @default(now())
+  status     String    @db.VarChar(50) @default("draft") 
+  total_amount Decimal @db.Decimal(10, 2) @default(0)
+  notes      String?   @db.Text
+  
+  items ReceiptItem[]
+  
+  createdAt DateTime @default(now())
+
+  @@map("receipt")
 }
 
 model ReceiptItem {
   id        Int       @id @default(autoincrement())
   receiptId Int
-  receipt   Receipt   @relation(fields: [receiptId], references: [id])
+  receipt   Receipt       @relation(fields: [receiptId], references: [id])
   typeId    Int
   type      InventoryType @relation(fields: [typeId], references: [id])
   quantity  Int
-  price     Decimal   @db.Decimal(10, 2)
-  createdAt DateTime  @default(now())
+  price     Decimal       @db.Decimal(10, 2)
+  
+  createdAt DateTime @default(now())
+
+  @@map("receipt_item")
 }
 
 model InventoryMovement {
@@ -163,29 +238,84 @@ model InventoryMovement {
   inventory   Inventory @relation(fields: [inventoryId], references: [id])
   employeeId  Int
   employee    Employee  @relation(fields: [employeeId], references: [id])
-  type        String    @db.VarChar(50) // receipt, rental, return, move, writeoff
-  quantity    Int
+  type        String    @db.VarChar(50) 
+  quantity    Int       @default(1)
   note        String?   @db.Text
   createdAt   DateTime  @default(now())
+
+  @@map("inventory_movement")
+}
+
+model MoveRequest {
+  id          Int              @id @default(autoincrement())
+  number      String           @db.VarChar(50) @unique
+  createdAt   DateTime         @default(now())
+  status      String           @db.VarChar(50) @default("pending") 
+  employeeId  Int
+  employee    Employee         @relation(fields: [employeeId], references: [id])
+  
+  fromCellId  Int?
+  fromCell    Cell?            @relation("MoveRequestFrom", fields: [fromCellId], references: [id])
+  toCellId    Int?
+  toCell      Cell?            @relation("MoveRequestTo", fields: [toCellId], references: [id])
+  
+  reason      String?          @db.Text
+  priority    String           @db.VarChar(20) @default("normal")
+  requested_at DateTime        @default(now())
+  
+  operations  MovementOperation[]
+  
+  updatedAt   DateTime @updatedAt
+
+  @@map("move_request")
+}
+
+model MovementOperation {
+  id            Int             @id @default(autoincrement())
+  requestId     Int
+  request       MoveRequest     @relation(fields: [requestId], references: [id])
+  inventoryId   Int
+  inventory     Inventory       @relation(fields: [inventoryId], references: [id])
+  employeeId    Int
+  employee      Employee        @relation(fields: [employeeId], references: [id])
+  fromCellId    Int?            
+  toCellId      Int?            
+  completedAt   DateTime?
+  note          String?         @db.Text
+  createdAt     DateTime        @default(now())
+
+  @@map("movement_operation")
 }
 
 model InventoryCheck {
-  id        Int                @id @default(autoincrement())
-  number    String             @db.VarChar(50) @unique
-  date      DateTime           @default(now())
-  status    String             @db.VarChar(50) @default("in_progress")
-  items     InventoryCheckItem[]
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id             Int                  @id @default(autoincrement())
+  number         String               @db.VarChar(50) @unique
+  date           DateTime             @default(now())
+  status         String              
+  employeeId     Int
+  employee       Employee             @relation(fields: [employeeId], references: [id])
+  scheduled_date DateTime?            
+  notes          String?              @db.Text
+  
+  items InventoryCheckItem[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inventory_check")
 }
 
 model InventoryCheckItem {
-  id        Int              @id @default(autoincrement())
-  checkId   Int
-  check     InventoryCheck   @relation(fields: [checkId], references: [id])
-  inventoryId Int
-  inventory Inventory        @relation(fields: [inventoryId], references: [id])
-  expected  Int
-  actual    Int
-  createdAt DateTime         @default(now())
+  id             Int              @id @default(autoincrement())
+  checkId        Int
+  check          InventoryCheck   @relation(fields: [checkId], references: [id])
+  inventoryId    Int
+  inventory      Inventory        @relation(fields: [inventoryId], references: [id])
+  expectedStatus String?          @db.VarChar(50) 
+  actualStatus   String?          @db.VarChar(50) 
+  discrepancy    String?          @db.Text 
+  note           String?          @db.Text
+  createdAt      DateTime         @default(now())
+
+  @@map("inventory_check_item")
 }

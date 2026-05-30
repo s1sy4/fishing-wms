@@ -1,5 +1,7 @@
-// backend/src/catalog/dto/create-inventory-type.dto.ts
-// Просто интерфейс, без декораторов
 export interface CreateInventoryTypeDto {
   name: string;
+  description?: string;
+  rental_price?: number;
+  deposit?: number;
+  requires_assembly?: boolean;
 }

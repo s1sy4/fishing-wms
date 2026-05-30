@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ReceivingController } from './receiving.controller';
-import { ReceivingService } from './recieving.service';
+import { ReceivingService } from './receiving.service';
 
 @Module({
   controllers: [ReceivingController],

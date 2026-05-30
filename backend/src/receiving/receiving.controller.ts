@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Param, Delete, Logger } from '@nestjs/common';
-import { ReceivingService } from './recieving.service';
+import { ReceivingService } from './receiving.service';
 import { CreateReceiptDto } from './dto/create-receipt.dto';
 import { CreateReceiptItemDto } from './dto/create-receipt-item.dto';
 

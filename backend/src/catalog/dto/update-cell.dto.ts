@@ -1,0 +1,1 @@
+export interface UpdateCellDto { name?: string; zoneId?: number; capacity?: number; status?: string; }
